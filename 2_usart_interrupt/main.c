@@ -1,4 +1,6 @@
+//way0405
 #include <stdint.h>
+#include "blink.h"
 #include "reg.h"
 
 void init_usart1(void)
@@ -115,26 +117,34 @@ char usart1_receive_char(void)
 	*/
 }
 
+void usart1_handler(){
+	char ch = usart1_receive_char();
+	if (ch == '\r')//enter 時,
+		usart1_send_char('\n');//幫你換行
+
+	usart1_send_char(ch);//顯示在電腦上
+
+	CLEAR_BIT(USART1_BASE+USART_SR_OFFSET,RXNE_BIT);// clean flag
+	CLEAR_BIT(USART1_BASE+USART_SR_OFFSET,ORE_BIT);
+
+}
+
 int main(void)
 {
-	init_usart1();
-
+	init_usart1();//usart_interrupt();
+	SET_BIT(USART1_BASE+USART_CR1_OFFSET,RXNEIE_BIT);
+	SET_BIT(NVIC_ISER_BASE+NVIC_ISERn_OFFSET(1),5);//32*1+5
+	CLEAR_BIT(USART1_BASE+USART_SR_OFFSET,RXNE_BIT);// clean flag
 	char *hello = "Hello world!\r\n";
 
 	//send Hello world
 	while (*hello != '\0')
-		usart1_send_char(*hello++);
+		 usart1_send_char(*hello++);
 
 
 	//receive char and resend it
-	char ch;
 	while (1)
 	{
-		ch = usart1_receive_char();
-
-		if (ch == '\r')//enter 時,
-			usart1_send_char('\n');//幫你換行
-
-		usart1_send_char(ch);//顯示在電腦上
+		blink(LED_BLUE);
 	}
 }
